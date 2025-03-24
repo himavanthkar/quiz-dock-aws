@@ -38,14 +38,18 @@ jobs:
     steps:
       - checkout
       - setup_remote_docker
-      - aws-ecr/build-and-push-image:
-          create-repo: true
-          repo: ${AWS_ECR_BACKEND_REPO}
-          region: AWS_DEFAULT_REGION
-          tag: latest,${CIRCLE_SHA1}
-          dockerfile: Dockerfile
-          path: ./
-          extra-build-args: --platform=linux/amd64
+      - run:
+          name: AWS ECR Login
+          command: |
+            aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com
+      - run:
+          name: Build and Push Backend Image
+          command: |
+            docker build -t ${AWS_ECR_BACKEND_REPO}:latest -t ${AWS_ECR_BACKEND_REPO}:${CIRCLE_SHA1} --platform=linux/amd64 .
+            docker tag ${AWS_ECR_BACKEND_REPO}:latest ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${AWS_ECR_BACKEND_REPO}:latest
+            docker tag ${AWS_ECR_BACKEND_REPO}:${CIRCLE_SHA1} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${AWS_ECR_BACKEND_REPO}:${CIRCLE_SHA1}
+            docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${AWS_ECR_BACKEND_REPO}:latest
+            docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${AWS_ECR_BACKEND_REPO}:${CIRCLE_SHA1}
 
   build-and-push-frontend:
     docker:
@@ -53,14 +57,19 @@ jobs:
     steps:
       - checkout
       - setup_remote_docker
-      - aws-ecr/build-and-push-image:
-          create-repo: true
-          repo: ${AWS_ECR_FRONTEND_REPO}
-          region: AWS_DEFAULT_REGION
-          tag: latest,${CIRCLE_SHA1}
-          dockerfile: Dockerfile
-          path: ./frontend
-          extra-build-args: --platform=linux/amd64
+      - run:
+          name: AWS ECR Login
+          command: |
+            aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com
+      - run:
+          name: Build and Push Frontend Image
+          command: |
+            cd frontend
+            docker build -t ${AWS_ECR_FRONTEND_REPO}:latest -t ${AWS_ECR_FRONTEND_REPO}:${CIRCLE_SHA1} --platform=linux/amd64 .
+            docker tag ${AWS_ECR_FRONTEND_REPO}:latest ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${AWS_ECR_FRONTEND_REPO}:latest
+            docker tag ${AWS_ECR_FRONTEND_REPO}:${CIRCLE_SHA1} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${AWS_ECR_FRONTEND_REPO}:${CIRCLE_SHA1}
+            docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${AWS_ECR_FRONTEND_REPO}:latest
+            docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${AWS_ECR_FRONTEND_REPO}:${CIRCLE_SHA1}
 
 workflows:
   build-test-deploy:
