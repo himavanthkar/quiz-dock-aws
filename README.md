@@ -11,6 +11,160 @@ A full-stack quiz application deployed on AWS using Docker containers, ECR, and 
 - **Container Registry**: Amazon ECR
 - **Container Orchestration**: Amazon ECS
 
+## API Documentation
+
+### Authentication Endpoints
+
+#### POST /api/users/register
+Register a new user
+- **Request Body**:
+  ```json
+  {
+    "username": "string",
+    "email": "string",
+    "password": "string"
+  }
+  ```
+- **Response**: JWT token and user details
+
+#### POST /api/users/login
+Login existing user
+- **Request Body**:
+  ```json
+  {
+    "email": "string",
+    "password": "string"
+  }
+  ```
+- **Response**: JWT token and user details
+
+### Quiz Endpoints
+
+#### GET /api/quizzes
+Get all quizzes
+- **Auth**: Not required
+- **Response**: Array of quiz objects
+
+#### POST /api/quizzes
+Create a new quiz
+- **Auth**: Required
+- **Request Body**:
+  ```json
+  {
+    "title": "string",
+    "description": "string",
+    "category": "string",
+    "questions": [
+      {
+        "text": "string",
+        "choices": ["string"],
+        "rightAnswer": "number",
+        "points": "number"
+      }
+    ]
+  }
+  ```
+- **Response**: Created quiz object
+
+#### GET /api/quizzes/:id
+Get a specific quiz
+- **Auth**: Not required
+- **Response**: Quiz object with questions
+
+### Attempt Endpoints
+
+#### POST /api/attempts/:quizId/answer
+Submit an answer for a quiz question
+- **Auth**: Required
+- **Request Body**:
+  ```json
+  {
+    "questionIndex": "number",
+    "selectedAnswer": "number"
+  }
+  ```
+- **Response**: Updated attempt object
+
+#### PUT /api/attempts/:id/complete
+Complete a quiz attempt
+- **Auth**: Required
+- **Response**: Final attempt object with score
+
+#### GET /api/attempts
+Get user's quiz attempts
+- **Auth**: Required
+- **Response**: Array of attempt objects
+
+### User Profile Endpoints
+
+#### GET /api/users/me
+Get current user profile
+- **Auth**: Required
+- **Response**: User object
+
+#### PUT /api/users/me
+Update user profile
+- **Auth**: Required
+- **Request Body**:
+  ```json
+  {
+    "username": "string",
+    "email": "string",
+    "bio": "string"
+  }
+  ```
+- **Response**: Updated user object
+
+### Data Models
+
+#### Quiz Model
+```javascript
+{
+  title: String,
+  description: String,
+  category: String,
+  creator: ObjectId,
+  questions: [{
+    text: String,
+    choices: [String],
+    rightAnswer: Number,
+    points: Number
+  }],
+  createdAt: Date
+}
+```
+
+#### Attempt Model
+```javascript
+{
+  user: ObjectId,
+  quiz: ObjectId,
+  answers: [{
+    questionIndex: Number,
+    selectedAnswer: Number,
+    isCorrect: Boolean,
+    points: Number
+  }],
+  score: Number,
+  completed: Boolean,
+  startedAt: Date,
+  completedAt: Date
+}
+```
+
+#### User Model
+```javascript
+{
+  username: String,
+  email: String,
+  password: String (hashed),
+  bio: String,
+  quizzesTaken: Number,
+  quizzesCreated: Number,
+  createdAt: Date
+}
+```
+
 ## Environment Variables
 ```env
 # AWS Configuration
