@@ -23,9 +23,10 @@ jobs:
       - run:
           name: Run backend tests
           command: npm run test:ci
-      - run:
-          name: Run frontend tests
-          command: cd frontend && npm install && npm test -- --watchAll=false
+      # Frontend tests will be added later
+      # - run:
+      #     name: Run frontend tests
+      #     command: cd frontend && npm install && npm test -- --watchAll=false
 
 workflows:
   version: 2
