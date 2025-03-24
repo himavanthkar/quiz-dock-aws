@@ -115,14 +115,51 @@ jobs:
             aws --version
             aws sts get-caller-identity
             
-            # List services to verify they exist
-            echo "Available services in cluster ${AWS_ECS_CLUSTER}:"
-            aws ecs list-services --cluster ${AWS_ECS_CLUSTER} --region ${AWS_DEFAULT_REGION}
+            # Create ECS cluster if it doesn't exist
+            echo "Creating/verifying ECS cluster..."
+            aws ecs create-cluster \
+              --cluster-name quiz-dock-cluster \
+              --region ${AWS_DEFAULT_REGION} || true
             
-            # Update service without task definition to force new deployment
+            # Create task definition if it doesn't exist
+            echo "Creating/updating task definition..."
+            aws ecs register-task-definition \
+              --family quiz-dock-task \
+              --requires-compatibilities FARGATE \
+              --network-mode awsvpc \
+              --cpu 256 \
+              --memory 512 \
+              --container-definitions '[
+                {
+                  "name": "quiz-dock-backend",
+                  "image": "'${AWS_ACCOUNT_ID}'.dkr.ecr.'${AWS_DEFAULT_REGION}'.amazonaws.com/'${AWS_ECR_BACKEND_REPO}':latest",
+                  "essential": true,
+                  "portMappings": [{"containerPort": 5001, "protocol": "tcp"}]
+                },
+                {
+                  "name": "quiz-dock-frontend",
+                  "image": "'${AWS_ACCOUNT_ID}'.dkr.ecr.'${AWS_DEFAULT_REGION}'.amazonaws.com/'${AWS_ECR_FRONTEND_REPO}':latest",
+                  "essential": true,
+                  "portMappings": [{"containerPort": 3000, "protocol": "tcp"}]
+                }
+              ]'
+            
+            # Create service if it doesn't exist, update if it does
+            echo "Creating/updating ECS service..."
+            TASK_DEF_ARN=$(aws ecs describe-task-definition --task-definition quiz-dock-task --query 'taskDefinition.taskDefinitionArn' --output text)
+            
+            aws ecs create-service \
+              --cluster quiz-dock-cluster \
+              --service-name quiz-dock-service \
+              --task-definition "$TASK_DEF_ARN" \
+              --desired-count 1 \
+              --launch-type FARGATE \
+              --network-configuration "awsvpcConfiguration={subnets=[${AWS_SUBNET_ID}],securityGroups=[${AWS_SECURITY_GROUP}]}" \
+              --region ${AWS_DEFAULT_REGION} || \
             aws ecs update-service \
-              --cluster ${AWS_ECS_CLUSTER} \
+              --cluster quiz-dock-cluster \
               --service quiz-dock-service \
+              --task-definition "$TASK_DEF_ARN" \
               --force-new-deployment \
               --region ${AWS_DEFAULT_REGION}
 
