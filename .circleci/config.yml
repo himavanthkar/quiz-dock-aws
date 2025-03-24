@@ -52,22 +52,22 @@ workflows:
       - test
       - aws-ecr/build-and-push-image:
           name: build-and-push-backend
+          executor: aws-ecr/default
           requires:
             - test
           repo: "${AWS_RESOURCE_NAME_PREFIX}-backend"
           path: ./
           tag: "${CIRCLE_SHA1}"
           dockerfile: Dockerfile
-          resource_class: medium
       - aws-ecr/build-and-push-image:
           name: build-and-push-frontend
+          executor: aws-ecr/default
           requires:
             - test
           repo: "${AWS_RESOURCE_NAME_PREFIX}-frontend"
           path: ./frontend
           tag: "${CIRCLE_SHA1}"
           dockerfile: Dockerfile
-          resource_class: medium
       - aws-ecs/deploy-service-update:
           requires:
             - build-and-push-backend
