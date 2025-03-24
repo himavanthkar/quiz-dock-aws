@@ -21,8 +21,27 @@ jobs:
       - node/install-packages:
           pkg-manager: npm
       - run:
+          name: Check environment
+          command: |
+            echo "Node version: $(node -v)"
+            echo "NPM version: $(npm -v)"
+            echo "MongoDB URI: $MONGODB_URI"
+            echo "NODE_ENV: $NODE_ENV"
+      - run:
+          name: Wait for MongoDB
+          command: |
+            timeout 60s bash -c '
+            until nc -z localhost 27017
+            do
+              echo "Waiting for MongoDB to be ready..."
+              sleep 2
+            done'
+      - run:
           name: Run backend tests
-          command: npm run test:ci
+          command: |
+            echo "Running tests..."
+            npm run test:ci
+          no_output_timeout: 5m
       # Frontend tests will be added later
       # - run:
       #     name: Run frontend tests
