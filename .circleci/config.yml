@@ -39,12 +39,23 @@ jobs:
       - checkout
       - setup_remote_docker
       - run:
-          name: AWS ECR Login
+          name: Configure AWS Credentials
           command: |
-            aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com
+            mkdir -p ~/.aws
+            echo "[default]" > ~/.aws/credentials
+            echo "aws_access_key_id = ${AWS_KEY}" >> ~/.aws/credentials
+            echo "aws_secret_access_key = ${AWS_SECRET_ACCESS_KEY}" >> ~/.aws/credentials
+            echo "[default]" > ~/.aws/config
+            echo "region = ${AWS_DEFAULT_REGION}" >> ~/.aws/config
+            echo "output = json" >> ~/.aws/config
+      - run:
+          name: Create ECR Repository if not exists
+          command: |
+            aws ecr describe-repositories --repository-names ${AWS_ECR_BACKEND_REPO} || aws ecr create-repository --repository-name ${AWS_ECR_BACKEND_REPO}
       - run:
           name: Build and Push Backend Image
           command: |
+            aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com
             docker build -t ${AWS_ECR_BACKEND_REPO}:latest -t ${AWS_ECR_BACKEND_REPO}:${CIRCLE_SHA1} --platform=linux/amd64 .
             docker tag ${AWS_ECR_BACKEND_REPO}:latest ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${AWS_ECR_BACKEND_REPO}:latest
             docker tag ${AWS_ECR_BACKEND_REPO}:${CIRCLE_SHA1} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${AWS_ECR_BACKEND_REPO}:${CIRCLE_SHA1}
@@ -58,12 +69,23 @@ jobs:
       - checkout
       - setup_remote_docker
       - run:
-          name: AWS ECR Login
+          name: Configure AWS Credentials
           command: |
-            aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com
+            mkdir -p ~/.aws
+            echo "[default]" > ~/.aws/credentials
+            echo "aws_access_key_id = ${AWS_KEY}" >> ~/.aws/credentials
+            echo "aws_secret_access_key = ${AWS_SECRET_ACCESS_KEY}" >> ~/.aws/credentials
+            echo "[default]" > ~/.aws/config
+            echo "region = ${AWS_DEFAULT_REGION}" >> ~/.aws/config
+            echo "output = json" >> ~/.aws/config
+      - run:
+          name: Create ECR Repository if not exists
+          command: |
+            aws ecr describe-repositories --repository-names ${AWS_ECR_FRONTEND_REPO} || aws ecr create-repository --repository-name ${AWS_ECR_FRONTEND_REPO}
       - run:
           name: Build and Push Frontend Image
           command: |
+            aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com
             cd frontend
             docker build -t ${AWS_ECR_FRONTEND_REPO}:latest -t ${AWS_ECR_FRONTEND_REPO}:${CIRCLE_SHA1} --platform=linux/amd64 .
             docker tag ${AWS_ECR_FRONTEND_REPO}:latest ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${AWS_ECR_FRONTEND_REPO}:latest
