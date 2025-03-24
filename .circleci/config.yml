@@ -31,11 +31,13 @@ jobs:
             echo "NPM version: $(npm -v)"
             echo "NODE_ENV: $NODE_ENV"
             echo "JWT_SECRET is set: $([[ ! -z "$JWT_SECRET" ]] && echo 'Yes' || echo 'No')"
+            echo "Test files to run:"
+            find __tests__ -name "*.test.js" -type f
       - run:
           name: Run backend tests with JUnit reporter
           command: |
             echo "Running tests with increased timeout..."
-            NODE_OPTIONS="--max-old-space-size=4096" npm run test:ci -- --ci --reporters=default --reporters=jest-junit
+            NODE_OPTIONS="--max-old-space-size=4096" npm run test:ci -- --testMatch="**/__tests__/**/*.test.js" --ci --reporters=default --reporters=jest-junit
           no_output_timeout: 10m
       - store_test_results:
           path: ./reports/junit/
