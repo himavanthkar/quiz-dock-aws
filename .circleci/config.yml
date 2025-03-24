@@ -104,7 +104,7 @@ jobs:
             # Create ECS cluster if it doesn't exist
             echo "Creating/verifying ECS cluster..."
             aws ecs create-cluster \
-              --cluster-name quiz-dock-cluster \
+              --cluster-name quiz-application-cluster \
               --region ${AWS_DEFAULT_REGION} || true
             
             # Create task definition
@@ -112,7 +112,7 @@ jobs:
             EXECUTION_ROLE_ARN="arn:aws:iam::${AWS_ACCOUNT_ID}:role/aws-service-role/ecs.amazonaws.com/AWSServiceRoleForECS"
             
             aws ecs register-task-definition \
-              --family quiz-dock-task \
+              --family quiz-application-task \
               --requires-compatibilities FARGATE \
               --network-mode awsvpc \
               --cpu 256 \
@@ -120,13 +120,13 @@ jobs:
               --execution-role-arn "$EXECUTION_ROLE_ARN" \
               --container-definitions '[
                 {
-                  "name": "quiz-dock-backend",
+                  "name": "quiz-application-backend",
                   "image": "'${AWS_ACCOUNT_ID}'.dkr.ecr.'${AWS_DEFAULT_REGION}'.amazonaws.com/'${AWS_ECR_BACKEND_REPO}':latest",
                   "essential": true,
                   "portMappings": [{"containerPort": 5001, "protocol": "tcp"}]
                 },
                 {
-                  "name": "quiz-dock-frontend",
+                  "name": "quiz-application-frontend",
                   "image": "'${AWS_ACCOUNT_ID}'.dkr.ecr.'${AWS_DEFAULT_REGION}'.amazonaws.com/'${AWS_ECR_FRONTEND_REPO}':latest",
                   "essential": true,
                   "portMappings": [{"containerPort": 3000, "protocol": "tcp"}]
@@ -134,7 +134,7 @@ jobs:
               ]'
             
             # Get the latest task definition ARN
-            TASK_DEF_ARN=$(aws ecs describe-task-definition --task-definition quiz-dock-task --query 'taskDefinition.taskDefinitionArn' --output text)
+            TASK_DEF_ARN=$(aws ecs describe-task-definition --task-definition quiz-application-task --query 'taskDefinition.taskDefinitionArn' --output text)
             
             # Get default VPC subnets
             SUBNET_IDS=$(aws ec2 describe-subnets --filters "Name=default-for-az,Values=true" --query 'Subnets[].SubnetId' --output text | tr '\t' ',')
@@ -146,16 +146,16 @@ jobs:
             # Create or update ECS service
             echo "Creating/updating ECS service..."
             aws ecs create-service \
-              --cluster quiz-dock-cluster \
-              --service-name quiz-dock-service \
+              --cluster quiz-application-cluster \
+              --service-name quiz-application-service \
               --task-definition "$TASK_DEF_ARN" \
               --desired-count 1 \
               --launch-type FARGATE \
               --network-configuration "awsvpcConfiguration={subnets=[$SUBNET_IDS],securityGroups=[$SECURITY_GROUP_ID],assignPublicIp=ENABLED}" \
               --region ${AWS_DEFAULT_REGION} || \
             aws ecs update-service \
-              --cluster quiz-dock-cluster \
-              --service quiz-dock-service \
+              --cluster quiz-application-cluster \
+              --service quiz-application-service \
               --task-definition "$TASK_DEF_ARN" \
               --force-new-deployment \
               --region ${AWS_DEFAULT_REGION}
