@@ -14,10 +14,16 @@ jobs:
           JWT_SECRET: test_secret_key_123
           JWT_EXPIRE: 1h
           PORT: 5002
+          JEST_JUNIT_OUTPUT_DIR: ./reports/junit/
+    resource_class: medium
     steps:
       - checkout
       - node/install-packages:
           pkg-manager: npm
+      - run:
+          name: Create test results directory
+          command: |
+            mkdir -p ./reports/junit/
       - run:
           name: Check environment
           command: |
@@ -26,11 +32,16 @@ jobs:
             echo "NODE_ENV: $NODE_ENV"
             echo "JWT_SECRET is set: $([[ ! -z "$JWT_SECRET" ]] && echo 'Yes' || echo 'No')"
       - run:
-          name: Run backend tests
+          name: Run backend tests with JUnit reporter
           command: |
             echo "Running tests with increased timeout..."
-            NODE_OPTIONS="--max-old-space-size=4096" npm run test:ci
+            NODE_OPTIONS="--max-old-space-size=4096" npm run test:ci -- --ci --reporters=default --reporters=jest-junit
           no_output_timeout: 10m
+      - store_test_results:
+          path: ./reports/junit/
+      - store_artifacts:
+          path: ./reports/junit/
+          destination: test-results
 
 workflows:
   version: 2
@@ -45,6 +56,7 @@ workflows:
           path: ./
           tag: "${CIRCLE_SHA1}"
           dockerfile: Dockerfile
+          resource_class: medium
       - aws-ecr/build-and-push-image:
           name: build-and-push-frontend
           requires:
@@ -53,6 +65,7 @@ workflows:
           path: ./frontend
           tag: "${CIRCLE_SHA1}"
           dockerfile: Dockerfile
+          resource_class: medium
       - aws-ecs/deploy-service-update:
           requires:
             - build-and-push-backend
