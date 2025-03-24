@@ -111,9 +111,18 @@ jobs:
       - run:
           name: Deploy to ECS
           command: |
+            # First, get the current task definition
+            TASK_DEFINITION=$(aws ecs describe-task-definition \
+              --task-definition ${AWS_ECS_TASK_DEFINITION} \
+              --region ${AWS_DEFAULT_REGION} \
+              --query 'taskDefinition.taskDefinitionArn' \
+              --output text)
+            
+            # Update the service with the current task definition
             aws ecs update-service \
-              --cluster ${AWS_ECS_CLUSTER} \
-              --service ${AWS_ECS_SERVICE} \
+              --cluster "${AWS_ECS_CLUSTER}" \
+              --service "${AWS_ECS_SERVICE}" \
+              --task-definition "$TASK_DEFINITION" \
               --force-new-deployment \
               --region ${AWS_DEFAULT_REGION}
 
