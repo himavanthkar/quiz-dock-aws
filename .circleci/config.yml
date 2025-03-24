@@ -137,37 +137,25 @@ jobs:
                   "name": "quiz-dock-backend",
                   "image": "'${AWS_ACCOUNT_ID}'.dkr.ecr.'${AWS_DEFAULT_REGION}'.amazonaws.com/'${AWS_ECR_BACKEND_REPO}':latest",
                   "essential": true,
-                  "portMappings": [{"containerPort": 5001, "protocol": "tcp"}],
-                  "logConfiguration": {
-                    "logDriver": "awslogs",
-                    "options": {
-                      "awslogs-group": "/ecs/quiz-dock",
-                      "awslogs-region": "'${AWS_DEFAULT_REGION}'",
-                      "awslogs-stream-prefix": "backend"
-                    }
-                  }
+                  "portMappings": [{"containerPort": 5001, "protocol": "tcp"}]
                 },
                 {
                   "name": "quiz-dock-frontend",
                   "image": "'${AWS_ACCOUNT_ID}'.dkr.ecr.'${AWS_DEFAULT_REGION}'.amazonaws.com/'${AWS_ECR_FRONTEND_REPO}':latest",
                   "essential": true,
-                  "portMappings": [{"containerPort": 3000, "protocol": "tcp"}],
-                  "logConfiguration": {
-                    "logDriver": "awslogs",
-                    "options": {
-                      "awslogs-group": "/ecs/quiz-dock",
-                      "awslogs-region": "'${AWS_DEFAULT_REGION}'",
-                      "awslogs-stream-prefix": "frontend"
-                    }
-                  }
+                  "portMappings": [{"containerPort": 3000, "protocol": "tcp"}]
                 }
               ]'
             
-            # Create CloudWatch log group if it doesn't exist
-            aws logs create-log-group --log-group-name /ecs/quiz-dock || true
-            
             # Get the latest task definition ARN
             TASK_DEF_ARN=$(aws ecs describe-task-definition --task-definition quiz-dock-task --query 'taskDefinition.taskDefinitionArn' --output text)
+            
+            # Get default VPC subnets
+            SUBNET_IDS=$(aws ec2 describe-subnets --filters "Name=default-for-az,Values=true" --query 'Subnets[].SubnetId' --output text | tr '\t' ',')
+            
+            # Get default VPC security group
+            VPC_ID=$(aws ec2 describe-vpcs --filters "Name=isDefault,Values=true" --query 'Vpcs[0].VpcId' --output text)
+            SECURITY_GROUP_ID=$(aws ec2 describe-security-groups --filters "Name=vpc-id,Values=$VPC_ID" "Name=group-name,Values=default" --query 'SecurityGroups[0].GroupId' --output text)
             
             # Create or update ECS service
             echo "Creating/updating ECS service..."
@@ -177,7 +165,7 @@ jobs:
               --task-definition "$TASK_DEF_ARN" \
               --desired-count 1 \
               --launch-type FARGATE \
-              --network-configuration "awsvpcConfiguration={subnets=[${AWS_SUBNET_ID}],securityGroups=[${AWS_SECURITY_GROUP}],assignPublicIp=ENABLED}" \
+              --network-configuration "awsvpcConfiguration={subnets=[$SUBNET_IDS],securityGroups=[$SECURITY_GROUP_ID],assignPublicIp=ENABLED}" \
               --region ${AWS_DEFAULT_REGION} || \
             aws ecs update-service \
               --cluster quiz-dock-cluster \
