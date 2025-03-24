@@ -121,6 +121,32 @@ jobs:
               --cluster-name quiz-dock-cluster \
               --region ${AWS_DEFAULT_REGION} || true
             
+            # Create ECS task execution role if it doesn't exist
+            echo "Creating/verifying ECS task execution role..."
+            aws iam get-role --role-name ecsTaskExecutionRole || \
+            aws iam create-role \
+              --role-name ecsTaskExecutionRole \
+              --assume-role-policy-document '{
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Principal": {
+                      "Service": "ecs-tasks.amazonaws.com"
+                    },
+                    "Action": "sts:AssumeRole"
+                  }
+                ]
+              }'
+            
+            # Attach required policies to the role
+            aws iam attach-role-policy \
+              --role-name ecsTaskExecutionRole \
+              --policy-arn arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy || true
+            
+            # Get the role ARN
+            EXECUTION_ROLE_ARN=$(aws iam get-role --role-name ecsTaskExecutionRole --query 'Role.Arn' --output text)
+            
             # Create task definition if it doesn't exist
             echo "Creating/updating task definition..."
             aws ecs register-task-definition \
@@ -129,20 +155,41 @@ jobs:
               --network-mode awsvpc \
               --cpu 256 \
               --memory 512 \
+              --execution-role-arn "$EXECUTION_ROLE_ARN" \
+              --task-role-arn "$EXECUTION_ROLE_ARN" \
               --container-definitions '[
                 {
                   "name": "quiz-dock-backend",
                   "image": "'${AWS_ACCOUNT_ID}'.dkr.ecr.'${AWS_DEFAULT_REGION}'.amazonaws.com/'${AWS_ECR_BACKEND_REPO}':latest",
                   "essential": true,
-                  "portMappings": [{"containerPort": 5001, "protocol": "tcp"}]
+                  "portMappings": [{"containerPort": 5001, "protocol": "tcp"}],
+                  "logConfiguration": {
+                    "logDriver": "awslogs",
+                    "options": {
+                      "awslogs-group": "/ecs/quiz-dock",
+                      "awslogs-region": "'${AWS_DEFAULT_REGION}'",
+                      "awslogs-stream-prefix": "backend"
+                    }
+                  }
                 },
                 {
                   "name": "quiz-dock-frontend",
                   "image": "'${AWS_ACCOUNT_ID}'.dkr.ecr.'${AWS_DEFAULT_REGION}'.amazonaws.com/'${AWS_ECR_FRONTEND_REPO}':latest",
                   "essential": true,
-                  "portMappings": [{"containerPort": 3000, "protocol": "tcp"}]
+                  "portMappings": [{"containerPort": 3000, "protocol": "tcp"}],
+                  "logConfiguration": {
+                    "logDriver": "awslogs",
+                    "options": {
+                      "awslogs-group": "/ecs/quiz-dock",
+                      "awslogs-region": "'${AWS_DEFAULT_REGION}'",
+                      "awslogs-stream-prefix": "frontend"
+                    }
+                  }
                 }
               ]'
+            
+            # Create CloudWatch log group if it doesn't exist
+            aws logs create-log-group --log-group-name /ecs/quiz-dock || true
             
             # Create service if it doesn't exist, update if it does
             echo "Creating/updating ECS service..."
@@ -154,7 +201,7 @@ jobs:
               --task-definition "$TASK_DEF_ARN" \
               --desired-count 1 \
               --launch-type FARGATE \
-              --network-configuration "awsvpcConfiguration={subnets=[${AWS_SUBNET_ID}],securityGroups=[${AWS_SECURITY_GROUP}]}" \
+              --network-configuration "awsvpcConfiguration={subnets=[${AWS_SUBNET_ID}],securityGroups=[${AWS_SECURITY_GROUP}],assignPublicIp=ENABLED}" \
               --region ${AWS_DEFAULT_REGION} || \
             aws ecs update-service \
               --cluster quiz-dock-cluster \
