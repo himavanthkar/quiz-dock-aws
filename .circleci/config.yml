@@ -35,19 +35,18 @@ jobs:
   build-and-push-backend:
     docker:
       - image: cimg/aws:2024.03
-        environment:
-          AWS_ACCESS_KEY_ID: ${AWS_KEY}
-          AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
-          AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
     steps:
       - checkout
       - setup_remote_docker
+      - run:
+          name: Set ECR Registry URL
+          command: |
+            echo "export ECR_REGISTRY_URL=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com" >> $BASH_ENV
+            source $BASH_ENV
       - aws-ecr/build-and-push-image:
-          account-url: "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
-          aws-access-key-id: ${AWS_KEY}
-          aws-secret-access-key: ${AWS_SECRET_ACCESS_KEY}
-          region: ${AWS_DEFAULT_REGION}
           repo: ${AWS_ECR_BACKEND_REPO}
+          registry-id: AWS_ACCOUNT_ID
+          region: AWS_DEFAULT_REGION
           tag: latest,${CIRCLE_SHA1}
           path: ./
           extra-build-args: --platform=linux/amd64
@@ -55,19 +54,18 @@ jobs:
   build-and-push-frontend:
     docker:
       - image: cimg/aws:2024.03
-        environment:
-          AWS_ACCESS_KEY_ID: ${AWS_KEY}
-          AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
-          AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
     steps:
       - checkout
       - setup_remote_docker
+      - run:
+          name: Set ECR Registry URL
+          command: |
+            echo "export ECR_REGISTRY_URL=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com" >> $BASH_ENV
+            source $BASH_ENV
       - aws-ecr/build-and-push-image:
-          account-url: "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
-          aws-access-key-id: ${AWS_KEY}
-          aws-secret-access-key: ${AWS_SECRET_ACCESS_KEY}
-          region: ${AWS_DEFAULT_REGION}
           repo: ${AWS_ECR_FRONTEND_REPO}
+          registry-id: AWS_ACCOUNT_ID
+          region: AWS_DEFAULT_REGION
           tag: latest,${CIRCLE_SHA1}
           path: ./frontend
           extra-build-args: --platform=linux/amd64
