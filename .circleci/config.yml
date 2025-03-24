@@ -34,7 +34,7 @@ jobs:
 
   build-and-push-backend:
     docker:
-      - image: cimg/aws:2024.01
+      - image: cimg/aws:2024.03
     steps:
       - checkout
       - setup_remote_docker
@@ -46,7 +46,7 @@ jobs:
 
   build-and-push-frontend:
     docker:
-      - image: cimg/aws:2024.01
+      - image: cimg/aws:2024.03
     steps:
       - checkout
       - setup_remote_docker
