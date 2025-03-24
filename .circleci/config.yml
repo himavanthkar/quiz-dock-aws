@@ -35,16 +35,15 @@ jobs:
   build-and-push-backend:
     docker:
       - image: cimg/aws:2024.03
+        environment:
+          AWS_ACCESS_KEY_ID: ${AWS_KEY}
+          AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+          AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
     steps:
       - checkout
       - setup_remote_docker
-      - run:
-          name: Configure AWS credentials
-          command: |
-            aws configure set aws_access_key_id ${AWS_KEY}
-            aws configure set aws_secret_access_key ${AWS_SECRET_ACCESS_KEY}
-            aws configure set default.region ${AWS_DEFAULT_REGION}
       - aws-ecr/build-and-push-image:
+          account-url: "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
           repo: ${AWS_ECR_BACKEND_REPO}
           tag: latest,${CIRCLE_SHA1}
           path: ./
@@ -53,16 +52,15 @@ jobs:
   build-and-push-frontend:
     docker:
       - image: cimg/aws:2024.03
+        environment:
+          AWS_ACCESS_KEY_ID: ${AWS_KEY}
+          AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+          AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
     steps:
       - checkout
       - setup_remote_docker
-      - run:
-          name: Configure AWS credentials
-          command: |
-            aws configure set aws_access_key_id ${AWS_KEY}
-            aws configure set aws_secret_access_key ${AWS_SECRET_ACCESS_KEY}
-            aws configure set default.region ${AWS_DEFAULT_REGION}
       - aws-ecr/build-and-push-image:
+          account-url: "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
           repo: ${AWS_ECR_FRONTEND_REPO}
           tag: latest,${CIRCLE_SHA1}
           path: ./frontend
