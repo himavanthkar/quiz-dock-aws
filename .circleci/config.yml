@@ -35,42 +35,24 @@ jobs:
   build-and-push-backend:
     docker:
       - image: cimg/aws:2024.03
-        environment:
-          AWS_ACCESS_KEY_ID: ${AWS_KEY}
-          AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
-          AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
     steps:
       - checkout
       - setup_remote_docker
-      - run:
-          name: Configure AWS CLI
-          command: |
-            aws configure set region $AWS_DEFAULT_REGION
       - aws-ecr/build-and-push-image:
-          create-repo: true
-          repo: "${AWS_ECR_BACKEND_REPO}"
-          tag: "latest,${CIRCLE_SHA1}"
+          repo: ${AWS_ECR_BACKEND_REPO}
+          tag: latest,${CIRCLE_SHA1}
           path: ./
           extra-build-args: --platform=linux/amd64
 
   build-and-push-frontend:
     docker:
       - image: cimg/aws:2024.03
-        environment:
-          AWS_ACCESS_KEY_ID: ${AWS_KEY}
-          AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
-          AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
     steps:
       - checkout
       - setup_remote_docker
-      - run:
-          name: Configure AWS CLI
-          command: |
-            aws configure set region $AWS_DEFAULT_REGION
       - aws-ecr/build-and-push-image:
-          create-repo: true
-          repo: "${AWS_ECR_FRONTEND_REPO}"
-          tag: "latest,${CIRCLE_SHA1}"
+          repo: ${AWS_ECR_FRONTEND_REPO}
+          tag: latest,${CIRCLE_SHA1}
           path: ./frontend
           extra-build-args: --platform=linux/amd64
 
@@ -88,6 +70,6 @@ workflows:
           requires:
             - build-and-push-backend
             - build-and-push-frontend
-          family: "${AWS_ECS_CLUSTER}"
-          cluster: "${AWS_ECS_CLUSTER}"
+          family: ${AWS_ECS_CLUSTER}
+          cluster: ${AWS_ECS_CLUSTER}
           container-image-name-updates: "container=quiz-dock-backend,tag=${CIRCLE_SHA1},container=quiz-dock-frontend,tag=${CIRCLE_SHA1}" 
