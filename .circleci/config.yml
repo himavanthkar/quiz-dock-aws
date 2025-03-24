@@ -121,33 +121,7 @@ jobs:
               --cluster-name quiz-dock-cluster \
               --region ${AWS_DEFAULT_REGION} || true
             
-            # Create ECS task execution role if it doesn't exist
-            echo "Creating/verifying ECS task execution role..."
-            aws iam get-role --role-name ecsTaskExecutionRole || \
-            aws iam create-role \
-              --role-name ecsTaskExecutionRole \
-              --assume-role-policy-document '{
-                "Version": "2012-10-17",
-                "Statement": [
-                  {
-                    "Effect": "Allow",
-                    "Principal": {
-                      "Service": "ecs-tasks.amazonaws.com"
-                    },
-                    "Action": "sts:AssumeRole"
-                  }
-                ]
-              }'
-            
-            # Attach required policies to the role
-            aws iam attach-role-policy \
-              --role-name ecsTaskExecutionRole \
-              --policy-arn arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy || true
-            
-            # Get the role ARN
-            EXECUTION_ROLE_ARN=$(aws iam get-role --role-name ecsTaskExecutionRole --query 'Role.Arn' --output text)
-            
-            # Create task definition if it doesn't exist
+            # Create task definition
             echo "Creating/updating task definition..."
             aws ecs register-task-definition \
               --family quiz-dock-task \
@@ -155,8 +129,7 @@ jobs:
               --network-mode awsvpc \
               --cpu 256 \
               --memory 512 \
-              --execution-role-arn "$EXECUTION_ROLE_ARN" \
-              --task-role-arn "$EXECUTION_ROLE_ARN" \
+              --execution-role-arn ${AWS_ECS_EXECUTION_ROLE_ARN} \
               --container-definitions '[
                 {
                   "name": "quiz-dock-backend",
@@ -191,10 +164,11 @@ jobs:
             # Create CloudWatch log group if it doesn't exist
             aws logs create-log-group --log-group-name /ecs/quiz-dock || true
             
-            # Create service if it doesn't exist, update if it does
-            echo "Creating/updating ECS service..."
+            # Get the latest task definition ARN
             TASK_DEF_ARN=$(aws ecs describe-task-definition --task-definition quiz-dock-task --query 'taskDefinition.taskDefinitionArn' --output text)
             
+            # Create or update ECS service
+            echo "Creating/updating ECS service..."
             aws ecs create-service \
               --cluster quiz-dock-cluster \
               --service-name quiz-dock-service \
