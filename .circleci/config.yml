@@ -93,6 +93,30 @@ jobs:
             docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${AWS_ECR_FRONTEND_REPO}:latest
             docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${AWS_ECR_FRONTEND_REPO}:${CIRCLE_SHA1}
 
+  deploy-to-ecs:
+    docker:
+      - image: cimg/aws:2024.03
+    steps:
+      - checkout
+      - run:
+          name: Configure AWS Credentials
+          command: |
+            mkdir -p ~/.aws
+            echo "[default]" > ~/.aws/credentials
+            echo "aws_access_key_id = ${AWS_KEY}" >> ~/.aws/credentials
+            echo "aws_secret_access_key = ${AWS_SECRET_ACCESS_KEY}" >> ~/.aws/credentials
+            echo "[default]" > ~/.aws/config
+            echo "region = ${AWS_DEFAULT_REGION}" >> ~/.aws/config
+            echo "output = json" >> ~/.aws/config
+      - run:
+          name: Deploy to ECS
+          command: |
+            aws ecs update-service \
+              --cluster ${AWS_ECS_CLUSTER} \
+              --service ${AWS_ECS_SERVICE} \
+              --force-new-deployment \
+              --region ${AWS_DEFAULT_REGION}
+
 workflows:
   build-test-deploy:
     jobs:
@@ -103,10 +127,7 @@ workflows:
       - build-and-push-frontend:
           requires:
             - test
-      - aws-ecs/deploy-service-update:
+      - deploy-to-ecs:
           requires:
             - build-and-push-backend
-            - build-and-push-frontend
-          family: ${AWS_ECS_CLUSTER}
-          cluster: ${AWS_ECS_CLUSTER}
-          container-image-name-updates: "container=quiz-dock-backend,tag=${CIRCLE_SHA1},container=quiz-dock-frontend,tag=${CIRCLE_SHA1}" 
+            - build-and-push-frontend 
