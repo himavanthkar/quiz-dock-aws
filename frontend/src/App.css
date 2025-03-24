@@ -1,0 +1,28 @@
+/* Styles for disabled quiz options */
+.disabled-option {
+  pointer-events: none;
+}
+
+.option-card {
+  transition: all 0.2s ease;
+}
+
+.option-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.disabled-option:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* Show the correct answer with a subtle highlight */
+.option-card .badge-success {
+  animation: fadeIn 0.5s;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+} 

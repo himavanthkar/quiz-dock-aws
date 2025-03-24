@@ -1,0 +1,193 @@
+/* Timeline Component Styles */
+.timeline {
+  margin: 0 auto;
+  position: relative;
+  max-width: 1200px;
+}
+
+.timeline::after {
+  content: '';
+  position: absolute;
+  width: 2px;
+  background-color: #e0e0e0;
+  top: 0;
+  bottom: 0;
+  left: 20px;
+  margin-left: -1px;
+}
+
+.timeline-item {
+  padding: 10px 40px;
+  position: relative;
+  background-color: inherit;
+  width: 100%;
+}
+
+.timeline-item-content {
+  padding: 15px;
+  background-color: #f8f9fa;
+  position: relative;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+}
+
+.timeline-item-content .tag {
+  color: #fff;
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: 3px;
+  display: inline-block;
+  margin-bottom: 10px;
+}
+
+.timeline-item-content time {
+  color: #777;
+  font-size: 12px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.timeline-item-content p {
+  margin: 10px 0;
+  line-height: 1.5;
+}
+
+.timeline-item-content a {
+  display: inline-block;
+  margin-top: 10px;
+  text-decoration: none;
+  color: #007bff;
+}
+
+.timeline-item-content a:hover {
+  text-decoration: underline;
+}
+
+.timeline-item-content .circle {
+  background-color: #fff;
+  border: 3px solid #e17055;
+  border-radius: 50%;
+  position: absolute;
+  top: 20px;
+  left: -50px;
+  width: 20px;
+  height: 20px;
+  z-index: 1;
+}
+
+/* Profile Page Styles */
+.profile-avatar {
+  border: 4px solid #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Quiz Creation/Edit Form Styles */
+.step-1, .step-2, .step-3 {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Quiz Card Styles */
+.quiz-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.quiz-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.quiz-card .card-img-top {
+  height: 180px;
+  object-fit: cover;
+}
+
+/* House Colors */
+.house-gryffindor {
+  background-color: #740001;
+  color: #d3a625;
+}
+
+.house-slytherin {
+  background-color: #1a472a;
+  color: #aaaaaa;
+}
+
+.house-ravenclaw {
+  background-color: #0e1a40;
+  color: #946b2d;
+}
+
+.house-hufflepuff {
+  background-color: #ecb939;
+  color: #372e29;
+}
+
+/* Quiz Results Page */
+.result-summary {
+  background-color: #f8f9fa;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.result-feedback {
+  padding: 15px;
+  border-radius: 5px;
+  margin-bottom: 20px;
+}
+
+.result-feedback.excellent {
+  background-color: #d4edda;
+  border-left: 5px solid #28a745;
+}
+
+.result-feedback.good {
+  background-color: #fff3cd;
+  border-left: 5px solid #ffc107;
+}
+
+.result-feedback.needs-improvement {
+  background-color: #f8d7da;
+  border-left: 5px solid #dc3545;
+}
+
+.question-result {
+  margin-bottom: 15px;
+  padding: 15px;
+  border-radius: 5px;
+  background-color: #f8f9fa;
+}
+
+.question-result.correct {
+  border-left: 5px solid #28a745;
+}
+
+.question-result.incorrect {
+  border-left: 5px solid #dc3545;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .timeline-item-content {
+    padding: 10px;
+  }
+  
+  .timeline-item {
+    padding: 10px 20px;
+  }
+  
+  .timeline-item-content .circle {
+    left: -30px;
+  }
+} 

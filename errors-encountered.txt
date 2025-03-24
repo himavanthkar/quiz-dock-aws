@@ -1,0 +1,240 @@
+# Errors Encountered During Setup and Troubleshooting
+
+## MongoDB Issues
+
+1. **MongoDB Port Already in Use**
+   - Error: `Address already in use` for port 27017
+   - Solution: Killed existing MongoDB processes with `pkill -f mongod` and restarted MongoDB with `mongod --dbpath ~/data/db --fork --logpath ~/data/db/mongodb.log`
+
+## Backend API Issues
+
+1. **Route Order Issue in userRoutes.js**
+   - Error: `Cast to ObjectId failed for value "me" (type string) at path "_id" for model "User"`
+   - Solution: Reordered routes in `routes/userRoutes.js` to ensure `/me` routes are defined before the `/:id` route to prevent Express from treating "me" as an ID parameter
+
+2. **Port Already in Use**
+   - Error: `Error: listen EADDRINUSE: address already in use :::5001`
+   - Solution: Killed existing Node.js processes with `pkill -f "node.*server.js"` before starting the server again
+
+3. **Attempts API Error**
+   - Error: `GET /api/attempts 400 X.XXX ms - 84` and `Error getting attempts: Cannot read properties of undefined (reading 'reduce')`
+   - Solution: 
+     - The backend was finding attempts but encountering an error when processing them
+     - Fixed by adding proper data processing in the getMyAttempts controller function:
+       - Added code to convert Mongoose documents to plain JavaScript objects
+       - Added null checks for percentageScore, passed status, and answers array
+       - Ensured default values are provided for missing properties
+     - Updated the Dashboard.js file to handle potential undefined values:
+       - Added checks to ensure quizzes and attempts are arrays
+       - Added null checks for user properties
+       - Added null checks for quiz properties
+       - Added null checks for attempt properties
+       - Improved the reduce functions to handle missing properties
+
+## Frontend Issues
+
+1. **Proxy Configuration Issue**
+   - Error: No response after submitting login credentials
+   - Solution: Updated the proxy in `frontend/package.json` from `http://localhost:5000` to `http://localhost:5001` to match the actual backend port
+
+2. **Axios Configuration Issue**
+   - Error: API calls not reaching the backend
+   - Solution: Created a custom axios configuration in `frontend/src/utils/index.js` to set the base URL to `http://localhost:5001` and updated imports in context files
+
+3. **Error Display Issue**
+   - Error: Login errors not visible to the user
+   - Solution: Added direct error display in the Login component to show authentication errors
+
+4. **Port Conflict**
+   - Error: "Something is already running on port 3000"
+   - Solution: Killed existing React development server processes with `pkill -f "react-scripts start"` and restarted the frontend or accepted the prompt to use a different port
+
+## Authentication Issues
+
+1. **Missing Demo Users**
+   - Error: Demo credentials shown on the login page didn't work
+   - Solution: Created the demo user accounts in the database using the API:
+     - Created TestUser account
+     - Created Harry Potter demo account
+     - Created Albus Dumbledore demo account
+
+2. **Login Credentials Issue**
+   - Error: "Invalid credentials" when trying to log in
+   - Solution: Verified that the following credentials work correctly on the backend:
+     - Harry Potter: Email: harry@hogwarts.edu, Password: gryffindor123
+     - TestUser: Email: test@example.com, Password: password123
+     - NewUser: Email: new@example.com, Password: password123
+   - If frontend login still fails, try clearing browser cache or using incognito mode
+
+3. **Authorization Issue**
+   - Error: "Not authorized to access this route" after successful login
+   - Solution: 
+     - Updated the token handling in `setAuthToken.js` to ensure it's properly stored in localStorage
+     - Enhanced the `loadUser` function in `AuthContext.js` to better handle token verification
+     - Updated the `login` function to explicitly set the token in localStorage and axios headers
+     - Modified the `App.js` file to check for token on initial load
+     - Added debugging to the `PrivateRoute` component to better handle authentication state
+
+4. **Login Failure Issue**
+   - Error: Login fails silently or with "Invalid credentials" even with correct credentials
+   - Solution: 
+     - Enhanced token handling in `setAuthToken.js` with better validation and error handling
+     - Improved the login function in `AuthContext.js` to clear existing tokens before login attempts
+     - Added more detailed logging throughout the authentication process
+     - Updated the App.js initialization to properly check for tokens on startup
+     - Added proper error handling for token validation failures
+     - Implemented better error messages for authentication failures
+
+## Other Issues
+
+1. **ESLint Warning**
+   - Warning: `'error' is assigned a value but never used` in Register.js
+   - Solution: This is a minor warning that doesn't affect functionality, but could be fixed by either using the error variable or removing it from destructuring 
+
+2. **Unused Variable Warning**
+   - Warning: `'navigate' is assigned a value but never used` in Dashboard.js
+   - Solution: This is a minor warning that doesn't affect functionality, but could be fixed by either using the navigate variable or removing it from destructuring
+
+## Quiz Functionality Issues
+
+1. **Attempts API Error**
+   - Error: `GET /api/attempts 400 2.626 ms - 84` when trying to view quiz attempts
+   - Solution: 
+     - Fixed route imports in server.js to ensure the attemptRoutes are properly loaded
+     - Added better error handling in the getMyAttempts controller function
+     - Ensured authentication is properly passed to the API
+
+2. **How Correct Answers Work**
+   - The quiz application stores the correct answer index in the `rightAnswer` field of each question
+   - When a user submits an answer, the `submitAnswer` function in `attemptController.js` compares the selected choice index with the `rightAnswer` index
+   - If they match, the answer is marked as correct and points are awarded
+   - The result is returned to the frontend, which displays feedback to the user
+   - When the quiz is completed, all answers are saved in the attempt record and statistics are calculated
+
+3. **Quiz Results Display**
+   - After completing a quiz, the results page shows:
+     - Overall score and pass/fail status
+     - A breakdown of each question
+     - The user's selected answer
+     - The correct answer
+     - Points earned for each question
+   - This information is retrieved from the saved attempt record in the database 
+
+## UI Functionality Issues
+
+1. **Edit and Delete Quiz Options Not Working**
+   - Error: Edit and delete options were not properly displayed or functioning in the QuizDetails and Dashboard pages
+   - Solution:
+     - Fixed the isOwner check in QuizDetails.js to handle both object and string creator IDs
+     - Added proper error handling for delete operations
+     - Added delete button in the Dashboard.js file
+     - Improved the UI layout for the action buttons
+     - Added proper error display for failed operations 
+
+2. **Process Management Issues**
+   - Error: Multiple instances of the server and frontend running simultaneously causing port conflicts
+     - `Error: listen EADDRINUSE: address already in use :::5001`
+     - `Something is already running on port 3000`
+   - Solution:
+     - Before starting the application, always kill all existing processes:
+       ```bash
+       # Kill all Node.js server processes
+       pkill -f "node.*server.js"
+       
+       # Kill all React development server processes
+       pkill -f "react-scripts start"
+       
+       # Wait a moment for processes to terminate
+       sleep 2
+       
+       # Start the application
+       npm run dev
+       ```
+     - If the above doesn't work, try more aggressive process termination:
+       ```bash
+       # Find process IDs using ports 5001 and 3000
+       lsof -i :5001
+       lsof -i :3000
+       
+       # Kill processes by PID
+       kill -9 <PID>
+       ```
+     - For macOS users, you can also use Activity Monitor to find and force quit Node.js processes
+     - As a last resort, restart your computer to clear all hanging processes
+
+## Recurring Errors and Comprehensive Fixes
+
+1. **Authentication Middleware Issues**
+   - Error: `GET /api/users/me 400` errors and inconsistent authentication
+   - Solution:
+     - Enhanced the `protect` middleware in `middleware/auth.js` with better token validation
+     - Added more detailed error messages to help diagnose authentication issues
+     - Improved error handling with try-catch blocks to prevent server crashes
+     - Added validation for token format and payload structure
+     - Improved user lookup from token with better error handling
+
+2. **Attempts API Reduce Error**
+   - Error: `Error getting attempts: Cannot read properties of undefined (reading 'reduce')` appearing hundreds of times in logs
+   - Solution:
+     - Fixed the `getMyAttempts` function in `controllers/attemptController.js`
+     - Added comprehensive null checks for all properties used in processing
+     - Implemented try-catch blocks around attempt processing to handle errors gracefully
+     - Added fallback values for missing properties to prevent undefined errors
+     - Ensured arrays are properly initialized before being processed
+
+3. **Multiple Process Instances**
+   - Error: Multiple instances of servers running simultaneously causing port conflicts
+   - Solution:
+     - Added a comprehensive process cleanup procedure before starting the application
+     - Implemented a waiting period after killing processes to ensure they're fully terminated
+     - Added instructions for finding and killing processes by port number
+     - Provided alternative methods for process termination on different operating systems
+
+## Quiz Functionality Errors
+
+1. **"quiz.remove is not a function" Error**
+   - Error: When trying to delete a quiz, the error "quiz.remove is not a function" appears
+   - Solution:
+     - Updated the `deleteQuiz` function in `controllers/quizController.js` to use `deleteOne()` instead of the deprecated `remove()` method
+     - Added better error handling and logging to track deletion issues
+     - Enhanced the error message to be more descriptive
+
+2. **"Failed to delete quiz. Please try again." Error**
+   - Error: Frontend error when trying to delete a quiz
+   - Solution:
+     - Enhanced the `deleteQuiz` function in `frontend/src/context/QuizContext.js` with better error handling
+     - Added validation for quiz ID before attempting deletion
+     - Improved error messages with more specific information
+     - Added logging to track the deletion process
+
+3. **"Cannot read properties of undefined (reading 'reduce')" Error**
+   - Error: Dashboard component crashes when trying to calculate statistics
+   - Solution:
+     - Rewritten the reduce functions in `Dashboard.js` with comprehensive null checks
+     - Added try-catch blocks around calculations to prevent crashes
+     - Created separate variables for calculated values with proper initialization
+     - Added fallback values for all calculations
+
+4. **"Attempt not found" Error**
+   - Error: When submitting answers in a quiz, "Attempt not found" error appears
+   - Solution:
+     - Fixed a critical issue in the `startAttempt` function in `frontend/src/context/QuizContext.js` where the attempt ID wasn't being properly stored
+     - Updated the function to correctly handle the API response structure, which returns `attemptId` separately from the `data` object
+     - Enhanced the `submitAnswer` function with better validation and error handling
+     - Added comprehensive error checking in the `TakeQuiz.js` component to validate attempt and question data before submission
+     - Improved error messages and user feedback for failed operations
+     - Added extensive logging throughout the quiz attempt process for easier debugging
+
+5. **"Cannot read properties of undefined (reading 'find')" Error**
+   - Error: When clicking on different options after submitting an answer, the results page crashes with "Cannot read properties of undefined (reading 'find')" error
+   - Solution:
+     - Added comprehensive null checks in the `QuizResults.js` component to handle cases where quiz data might be incomplete
+     - Prevented users from changing their answer selection after submitting by disabling option clicks during feedback display
+     - Enhanced the UI to visually indicate when options are disabled and to highlight the correct answer
+     - Added better error handling in the `handleQuizComplete` function to prevent navigation to the results page if there's an error
+     - Improved the user experience with subtle animations and visual cues for disabled options
+     - Added CSS styles to make the disabled state more obvious to users
+
+These fixes address the most common quiz functionality errors, improving the stability and user experience of the quiz application.
+
+These fixes address the most common and recurring errors in the application, improving stability and reducing the frequency of crashes and error messages in the logs.
