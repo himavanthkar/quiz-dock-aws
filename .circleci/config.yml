@@ -8,9 +8,8 @@ orbs:
 jobs:
   test:
     docker:
-      - image: cimg/node:18.19
-        environment:
-          NODE_ENV: test
+      - image: cimg/node:16.20
+      - image: mongo:4.4
     steps:
       - checkout
       - restore_cache:
@@ -19,18 +18,17 @@ jobs:
             - v1-dependencies-
       - run:
           name: Install Dependencies
-          command: |
-            npm install --legacy-peer-deps
-            cd frontend && npm install --legacy-peer-deps
+          command: npm install
       - save_cache:
           paths:
             - node_modules
-            - frontend/node_modules
           key: v1-dependencies-{{ checksum "package.json" }}
       - run:
           name: Run Tests
-          command: npm run test:ci
-          no_output_timeout: 5m
+          command: npm test
+          environment:
+            MONGODB_URI_TEST: mongodb://localhost:27017/quiz-test
+            JWT_SECRET: test-secret
 
   build-and-push-backend:
     docker:
@@ -49,18 +47,12 @@ jobs:
             echo "region = ${AWS_DEFAULT_REGION}" >> ~/.aws/config
             echo "output = json" >> ~/.aws/config
       - run:
-          name: Create ECR Repository if not exists
-          command: |
-            aws ecr describe-repositories --repository-names ${AWS_ECR_BACKEND_REPO} || aws ecr create-repository --repository-name ${AWS_ECR_BACKEND_REPO}
-      - run:
-          name: Build and Push Backend Image
+          name: Build and Push Backend
           command: |
             aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com
-            docker build -t ${AWS_ECR_BACKEND_REPO}:latest -t ${AWS_ECR_BACKEND_REPO}:${CIRCLE_SHA1} --platform=linux/amd64 .
+            docker build -t ${AWS_ECR_BACKEND_REPO} .
             docker tag ${AWS_ECR_BACKEND_REPO}:latest ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${AWS_ECR_BACKEND_REPO}:latest
-            docker tag ${AWS_ECR_BACKEND_REPO}:${CIRCLE_SHA1} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${AWS_ECR_BACKEND_REPO}:${CIRCLE_SHA1}
             docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${AWS_ECR_BACKEND_REPO}:latest
-            docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${AWS_ECR_BACKEND_REPO}:${CIRCLE_SHA1}
 
   build-and-push-frontend:
     docker:
@@ -79,19 +71,13 @@ jobs:
             echo "region = ${AWS_DEFAULT_REGION}" >> ~/.aws/config
             echo "output = json" >> ~/.aws/config
       - run:
-          name: Create ECR Repository if not exists
+          name: Build and Push Frontend
           command: |
-            aws ecr describe-repositories --repository-names ${AWS_ECR_FRONTEND_REPO} || aws ecr create-repository --repository-name ${AWS_ECR_FRONTEND_REPO}
-      - run:
-          name: Build and Push Frontend Image
-          command: |
-            aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com
             cd frontend
-            docker build -t ${AWS_ECR_FRONTEND_REPO}:latest -t ${AWS_ECR_FRONTEND_REPO}:${CIRCLE_SHA1} --platform=linux/amd64 .
+            aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com
+            docker build -t ${AWS_ECR_FRONTEND_REPO} .
             docker tag ${AWS_ECR_FRONTEND_REPO}:latest ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${AWS_ECR_FRONTEND_REPO}:latest
-            docker tag ${AWS_ECR_FRONTEND_REPO}:${CIRCLE_SHA1} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${AWS_ECR_FRONTEND_REPO}:${CIRCLE_SHA1}
             docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${AWS_ECR_FRONTEND_REPO}:latest
-            docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${AWS_ECR_FRONTEND_REPO}:${CIRCLE_SHA1}
 
   deploy-to-ecs:
     docker:
@@ -175,16 +161,17 @@ jobs:
               --region ${AWS_DEFAULT_REGION}
 
 workflows:
+  version: 2
   build-test-deploy:
     jobs:
       - test
-      - build-and-push-backend:
+      - build-and-push-frontend:
           requires:
             - test
-      - build-and-push-frontend:
+      - build-and-push-backend:
           requires:
             - test
       - deploy-to-ecs:
           requires:
-            - build-and-push-backend
-            - build-and-push-frontend 
+            - build-and-push-frontend
+            - build-and-push-backend 

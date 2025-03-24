@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="7" failures="0" errors="0" time="11.211">
+  <testsuite name="__tests__/quiz.test.js" errors="0" failures="0" skipped="0" timestamp="2025-03-24T06:22:15" time="10.873" tests="3">
+    <testcase classname="Quiz API › GET /api/quizzes" name="should get all quizzes" time="0.892">
+    </testcase>
+    <testcase classname="Quiz API › POST /api/quizzes" name="should create a new quiz" time="0.102">
+    </testcase>
+    <testcase classname="Quiz API › POST /api/quizzes" name="should not create quiz without auth" time="0.116">
+    </testcase>
+  </testsuite>
+  <testsuite name="__tests__/auth.test.js" errors="0" failures="0" skipped="0" timestamp="2025-03-24T06:22:15" time="11.015" tests="4">
+    <testcase classname="Auth API › POST /api/users/register" name="should register a new user" time="0.858">
+    </testcase>
+    <testcase classname="Auth API › POST /api/users/register" name="should not register user with existing email" time="0.091">
+    </testcase>
+    <testcase classname="Auth API › POST /api/users/login" name="should login existing user" time="0.216">
+    </testcase>
+    <testcase classname="Auth API › POST /api/users/login" name="should not login with wrong password" time="0.182">
+    </testcase>
+  </testsuite>
+</testsuites>

@@ -1,201 +1,174 @@
-# Quiz Application HW-2
+# Quiz Application - AWS Deployment (HW3)
 
-A full-featured quiz application that allows users to create, share, and take quizzes on various topics.
+## Project Overview
+A full-stack quiz application deployed on AWS using Docker containers, ECR, and ECS with automated CI/CD through CircleCI.
 
-## Features
+## Architecture
+- **Frontend**: React application containerized and hosted on ECS
+- **Backend**: Node.js/Express API containerized and hosted on ECS
+- **Database**: MongoDB Atlas
+- **CI/CD**: CircleCI for automated testing and deployment
+- **Container Registry**: Amazon ECR
+- **Container Orchestration**: Amazon ECS
 
-- User authentication (register, login, profile management)
-- Create and manage quizzes with multiple-choice questions
-- Take quizzes and receive immediate feedback on answers
-- View quiz results and statistics
-- Browse public quizzes by category
-- Dashboard to track quiz attempts and created quizzes
+## Environment Variables
+```env
+# AWS Configuration
+AWS_ACCOUNT_ID=xxxx2510
+AWS_DEFAULT_REGION=xxxxst-1
+AWS_ECR_BACKEND_REPO=xxxxkend
+AWS_ECR_FRONTEND_REPO=xxxxtend
+AWS_ECS_CLUSTER=xxxxster
+AWS_KEY=xxxxSH2E
+AWS_RESOURCE_NAME_PREFIX=xxxx-app
+AWS_SECRET_ACCESS_KEY=xxxxfn/l
+DOCKER_IMAGE_TAG=xxxxest
+```
 
-## Getting Started
+## Repository Structure
+```
+├── frontend/                # React frontend application
+│   ├── src/                # Source code
+│   ├── Dockerfile         # Frontend container configuration
+│   └── package.json       # Frontend dependencies
+├── controllers/           # Backend API controllers
+├── models/               # MongoDB models
+├── middleware/           # Express middleware
+├── routes/              # API routes
+├── __tests__/           # Test files
+├── .circleci/           # CircleCI configuration
+├── Dockerfile           # Backend container configuration
+└── server.js            # Main backend entry point
+```
+
+## Setup Instructions
 
 ### Prerequisites
+- Node.js v14 or higher
+- Docker Desktop
+- AWS CLI configured
+- CircleCI account
+- MongoDB Atlas account
 
-- Node.js (v14 or higher)
-- MongoDB (local or Atlas)
-
-### Installation
-
+### Local Development
 1. Clone the repository
-```
+```bash
 git clone <repository-url>
 cd quiz-master
 ```
 
 2. Install dependencies
-```
+```bash
+# Install backend dependencies
 npm install
-cd frontend
-npm install
+
+# Install frontend dependencies
+cd frontend && npm install
 cd ..
 ```
 
 3. Set up environment variables
-Create a `.env` file in the root directory with the following variables:
-```
-NODE_ENV=development
-PORT=5001
-MONGO_URI=mongodb://localhost:27017/quizmaster
-JWT_SECRET=your_jwt_secret
-JWT_EXPIRE=30d
-```
+- Create `.env` file in root directory
+- Create `.env` file in frontend directory
 
 4. Run the application
-```
+```bash
 npm run dev
 ```
 
-This will start both the backend server (port 5001) and the frontend development server (port 3000).
+### Docker Build & Push
+1. Build images
+```bash
+# Backend
+docker build -t ${AWS_ECR_BACKEND_REPO}:latest .
 
-## How to Use the Application
+# Frontend
+cd frontend
+docker build -t ${AWS_ECR_FRONTEND_REPO}:latest .
+```
 
-### Creating a Quiz
+2. Push to ECR
+```bash
+# Login to ECR
+aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com
 
-1. **Register/Login**: Create an account or log in to an existing account.
-2. **Access Dashboard**: Navigate to the Dashboard and click on "Create Quiz".
-3. **Basic Information**: Fill in the quiz title, description, category, and other settings.
-4. **Add Questions**: For each question:
-   - Enter the question text
-   - Add multiple choice options (2-6 choices)
-   - Select which option is the correct answer (this is stored as the index of the correct option)
-   - Optionally add an explanation that will be shown after answering
-   - Set the point value and difficulty level
-5. **Save Quiz**: Click "Save Quiz" to publish your quiz.
+# Push images
+docker push ${AWS_ECR_BACKEND_REPO}:latest
+docker push ${AWS_ECR_FRONTEND_REPO}:latest
+```
 
-### Taking a Quiz
+## CI/CD Pipeline
 
-1. **Browse Quizzes**: Go to the "Quizzes" page to see available quizzes.
-2. **Start Quiz**: Click on a quiz card and then "Take Quiz" to begin.
-3. **Answer Questions**: For each question:
-   - Select your answer from the multiple-choice options
-   - Click "Next Question" to proceed
-   - You'll receive immediate feedback on whether your answer was correct
-   - The explanation will be shown if provided by the quiz creator
-4. **View Results**: After completing all questions, you'll see your final score and a breakdown of your answers.
-5. **Review**: You can review all questions, your answers, and the correct answers on the results page.
+### CircleCI Configuration
+The pipeline consists of three main stages:
+1. **Test**: Runs backend tests using Jest
+2. **Build**: Builds and pushes Docker images to ECR
+3. **Deploy**: Updates ECS services with new images
 
-### How Correct Answers Work
+### Environment Variables in CircleCI
+Required variables in CircleCI project settings:
+- AWS_ACCOUNT_ID
+- AWS_DEFAULT_REGION
+- AWS_ECR_BACKEND_REPO
+- AWS_ECR_FRONTEND_REPO
+- AWS_ECS_CLUSTER
+- AWS_KEY
+- AWS_RESOURCE_NAME_PREFIX
+- AWS_SECRET_ACCESS_KEY
+- DOCKER_IMAGE_TAG
 
-- When creating a quiz, the creator selects which option is correct for each question.
-- This is stored in the database as the `rightAnswer` field, which is the index of the correct option.
-- When a user takes a quiz, their selected answer index is compared to the stored `rightAnswer` index.
-- If they match, the answer is marked as correct and points are awarded.
-- All answers and results are saved in the database for later review.
+## Testing
+- Backend tests: `npm test`
+- Frontend tests: `cd frontend && npm test`
 
-## API Endpoints
+## Deployment
 
-### Authentication
-- `POST /api/users/register` - Register a new user
-- `POST /api/users/login` - Login user
-- `GET /api/users/me` - Get current user profile
+### AWS Services Used
+- **ECR**: Container registry for Docker images
+- **ECS**: Container orchestration service
+- **EC2**: Compute instances for ECS cluster
+- **VPC**: Network configuration
+- **IAM**: Access management
 
-### Quizzes
-- `GET /api/quizzes` - Get all public quizzes
-- `GET /api/quizzes/:id` - Get a specific quiz
-- `POST /api/quizzes` - Create a new quiz
-- `PUT /api/quizzes/:id` - Update a quiz
-- `DELETE /api/quizzes/:id` - Delete a quiz
+### Deployment Process
+1. Code is pushed to main branch
+2. CircleCI pipeline is triggered
+3. Tests are run
+4. Docker images are built and pushed to ECR
+5. ECS services are updated with new images
 
-### Questions
-- `POST /api/quizzes/:id/questions` - Add a question to a quiz
-- `PUT /api/quizzes/:id/questions/:questionId` - Update a question
-- `DELETE /api/quizzes/:id/questions/:questionId` - Delete a question
+## Monitoring & Logs
+- ECS task logs in CloudWatch
+- Application logs in CloudWatch
+- Container metrics in CloudWatch
 
-### Attempts
-- `POST /api/quizzes/:id/attempt` - Start a new quiz attempt
-- `POST /api/attempts/:id/answer` - Submit an answer for a question
-- `PUT /api/attempts/:id/complete` - Complete a quiz attempt
-- `GET /api/attempts/:id` - Get a specific attempt
-- `GET /api/attempts` - Get all attempts for the current user
+## Troubleshooting
+Common issues and solutions:
+1. **CircleCI Build Fails**:
+   - Check environment variables
+   - Verify AWS credentials
+   - Check test results
 
-## Technologies Used
+2. **Container Deployment Issues**:
+   - Check ECS service events
+   - Verify task definition
+   - Check container logs
 
-- **Backend**: Node.js, Express, MongoDB, Mongoose
-- **Frontend**: React, React Router, Context API
-- **Authentication**: JWT, bcrypt
-- **Styling**: Bootstrap, CSS
+3. **Application Errors**:
+   - Check CloudWatch logs
+   - Verify environment variables
+   - Check MongoDB connection
 
-## License
+## Security Considerations
+- AWS credentials managed through CircleCI
+- Sensitive data in environment variables
+- MongoDB Atlas security configuration
+- Container security best practices
 
-This project is licensed under the MIT License.
-
-## File Structure Overview
-
-### Frontend (`/frontend`)
-- **Pages**
-  - `Home.js` - Landing page with featured quizzes and categories
-  - `Login.js` - User login page
-  - `Register.js` - User registration page
-  - `Dashboard.js` - User dashboard showing created quizzes and attempts
-  - `QuizList.js` - Browse and search all available quizzes
-  - `QuizDetails.js` - Detailed view of a single quiz
-  - `TakeQuiz.js` - Interface for taking a quiz
-  - `QuizResults.js` - Shows results after completing a quiz
-  - `CreateQuiz.js` - Form for creating new quizzes
-  - `EditQuiz.js` - Form for editing existing quizzes
-  - `Profile.js` - User profile management
-
-- **Components**
-  - `/layout`
-    - `Navbar.js` - Top navigation bar
-    - `Footer.js` - Site footer
-    - `Spinner.js` - Loading animation
-    - `Alert.js` - Error/success messages
-  - `/routing`
-    - `PrivateRoute.js` - Route protection for authenticated users
-
-- **Context**
-  - `AuthContext.js` - Authentication state management
-  - `QuizContext.js` - Quiz data and operations management
-  - `/reducers`
-    - `authReducer.js` - Authentication state updates
-    - `quizReducer.js` - Quiz state updates
-
-### Backend (Root Directory)
-- **Server**
-  - `server.js` - Main Express server setup
-  - `.env` - Environment variables configuration
-
-- **API Routes**
-  - `/routes`
-    - `userRoutes.js` - User authentication endpoints
-    - `quizRoutes.js` - Quiz CRUD operations
-    - `attemptRoutes.js` - Quiz attempt handling
-
-- **Controllers**
-  - `/controllers`
-    - `userController.js` - User-related logic
-    - `quizController.js` - Quiz management logic
-    - `attemptController.js` - Quiz attempt logic
-
-- **Models**
-  - `/models`
-    - `User.js` - User data schema
-    - `Quiz.js` - Quiz data schema
-    - `Attempt.js` - Quiz attempt data schema
-
-- **Middleware**
-  - `/middleware`
-    - `auth.js` - Authentication middleware
-    - `error.js` - Error handling middleware
-
-### Utility Files
-- `/utils`
-  - `setAuthToken.js` - Axios authentication header setup
-  - `index.js` - Common utility functions
-
-### Testing and Documentation
-- `test-login.html` - Test page for authentication
-- `test-api.js` - API testing utilities
-- `postman_documentation.md` - API endpoint documentation
-- `errors-encountered.txt` - Common issues and solutions
-
-### Scripts
-- `setup.sh` - Initial setup script
-- `run-app.sh` - Application startup script
-- `restart.sh` - Application restart script
+## Future Improvements
+1. Add frontend tests
+2. Implement staging environment
+3. Add performance monitoring
+4. Implement auto-scaling
+5. Add backup strategy
 

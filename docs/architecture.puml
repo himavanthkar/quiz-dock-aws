@@ -1,0 +1,44 @@
+@startuml
+!define AWSPuml https://raw.githubusercontent.com/awslabs/aws-icons-for-plantuml/v15.0/dist
+!include AWSPuml/AWSCommon.puml
+!include AWSPuml/Containers/ElasticContainerRegistry.puml
+!include AWSPuml/Containers/ElasticContainerService.puml
+!include AWSPuml/NetworkingContentDelivery/VPC.puml
+!include AWSPuml/ManagementGovernance/CloudWatch.puml
+
+skinparam componentStyle uml2
+
+package "AWS Cloud" {
+  component "Amazon VPC" {
+    package "Public Subnet" {
+      [Application Load Balancer]
+    }
+    
+    package "Private Subnet" {
+      [Frontend Container\n(React.js)] as frontend
+      [Backend Container\n(Node.js/Express)] as backend
+    }
+  }
+  
+  [Amazon ECR] as ecr
+  [Amazon ECS] as ecs
+  [CloudWatch] as cloudwatch
+}
+
+[MongoDB Atlas] as mongodb
+[CircleCI] as circleci
+[GitHub Repository] as github
+
+[Application Load Balancer] --> frontend
+frontend --> backend
+backend --> mongodb
+[Users] --> [Application Load Balancer]
+
+circleci --> github
+circleci --> ecr
+ecr --> ecs
+ecs --> [Frontend Container\n(React.js)]
+ecs --> [Backend Container\n(Node.js/Express)]
+cloudwatch --> ecs
+
+@enduml 
