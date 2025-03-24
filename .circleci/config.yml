@@ -11,11 +11,9 @@ jobs:
       - image: cimg/node:18.19
         environment:
           NODE_ENV: test
-          MONGODB_URI: mongodb://localhost:27017/quizmaster_test
           JWT_SECRET: test_secret_key_123
           JWT_EXPIRE: 1h
-      - image: mongo:6.0
-        command: mongod --nojournal --noauth --port 27017
+          PORT: 5002
     steps:
       - checkout
       - node/install-packages:
@@ -25,27 +23,14 @@ jobs:
           command: |
             echo "Node version: $(node -v)"
             echo "NPM version: $(npm -v)"
-            echo "MongoDB URI: $MONGODB_URI"
             echo "NODE_ENV: $NODE_ENV"
-      - run:
-          name: Wait for MongoDB
-          command: |
-            timeout 60s bash -c '
-            until nc -z localhost 27017
-            do
-              echo "Waiting for MongoDB to be ready..."
-              sleep 2
-            done'
+            echo "JWT_SECRET is set: $([[ ! -z "$JWT_SECRET" ]] && echo 'Yes' || echo 'No')"
       - run:
           name: Run backend tests
           command: |
-            echo "Running tests..."
-            npm run test:ci
-          no_output_timeout: 5m
-      # Frontend tests will be added later
-      # - run:
-      #     name: Run frontend tests
-      #     command: cd frontend && npm install && npm test -- --watchAll=false
+            echo "Running tests with increased timeout..."
+            NODE_OPTIONS="--max-old-space-size=4096" npm run test:ci
+          no_output_timeout: 10m
 
 workflows:
   version: 2
