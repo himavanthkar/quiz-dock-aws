@@ -64,20 +64,26 @@ app.use((err, req, res, next) => {
 const connectDB = async () => {
   try {
     const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://himavanthkar:Hatrik123456%24@cluster0.hrv1x.mongodb.net/quizmaster?retryWrites=true&w=majority');
-
     console.log(`Database connected successfully`.cyan.underline.bold);
+    return conn;
   } catch (err) {
     console.error(`Error connecting to database: ${err.message}`.red);
     process.exit(1);
   }
 };
 
-// Connect to the database before starting the server
-connectDB();
+// Only connect to the database if not in test mode
+if (process.env.NODE_ENV !== 'test') {
+  connectDB();
+}
 
-// Start server
-const PORT = process.env.PORT || 5001;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`.yellow.bold);
-  console.log(`Go to http://localhost:${PORT}`.blue);
-});
+// Start server only if not in test mode
+if (process.env.NODE_ENV !== 'test') {
+  const PORT = process.env.PORT || 5001;
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`.yellow.bold);
+    console.log(`Go to http://localhost:${PORT}`.blue);
+  });
+}
+
+module.exports = { app, connectDB };

@@ -3,18 +3,57 @@ version: 2.1
 orbs:
   aws-ecr: circleci/aws-ecr@8.1.3
   aws-ecs: circleci/aws-ecs@3.2.0
+  node: circleci/node@5.1.0
+
+jobs:
+  test:
+    docker:
+      - image: cimg/node:18.19
+        environment:
+          NODE_ENV: test
+          MONGODB_URI: mongodb://localhost:27017/quizmaster_test
+          JWT_SECRET: test_secret_key_123
+          JWT_EXPIRE: 1h
+      - image: mongo:6.0
+        command: mongod --nojournal --noauth --port 27017
+    steps:
+      - checkout
+      - node/install-packages:
+          pkg-manager: npm
+      - run:
+          name: Run backend tests
+          command: npm run test:ci
+      - run:
+          name: Run frontend tests
+          command: cd frontend && npm install && npm test -- --watchAll=false
 
 workflows:
-  build-and-deploy:
+  version: 2
+  build-test-deploy:
     jobs:
+      - test
       - aws-ecr/build-and-push-image:
-          repo: "${AWS_RESOURCE_NAME_PREFIX}"
-          tag: "${CIRCLE_SHA1}"
+          name: build-and-push-backend
+          requires:
+            - test
+          repo: "${AWS_RESOURCE_NAME_PREFIX}-backend"
           path: ./
+          tag: "${CIRCLE_SHA1}"
+          dockerfile: Dockerfile
+      - aws-ecr/build-and-push-image:
+          name: build-and-push-frontend
+          requires:
+            - test
+          repo: "${AWS_RESOURCE_NAME_PREFIX}-frontend"
+          path: ./frontend
+          tag: "${CIRCLE_SHA1}"
           dockerfile: Dockerfile
       - aws-ecs/deploy-service-update:
           requires:
-            - aws-ecr/build-and-push-image
+            - build-and-push-backend
+            - build-and-push-frontend
           family: "${AWS_RESOURCE_NAME_PREFIX}-service"
           cluster: "${AWS_RESOURCE_NAME_PREFIX}-cluster"
-          container-image-name-updates: "container=${AWS_RESOURCE_NAME_PREFIX}-container,tag=${CIRCLE_SHA1}" 
+          container-image-name-updates: |
+            container=${AWS_RESOURCE_NAME_PREFIX}-backend-container,tag=${CIRCLE_SHA1}
+            container=${AWS_RESOURCE_NAME_PREFIX}-frontend-container,tag=${CIRCLE_SHA1} 
