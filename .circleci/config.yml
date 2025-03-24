@@ -123,13 +123,15 @@ jobs:
             
             # Create task definition
             echo "Creating/updating task definition..."
+            EXECUTION_ROLE_ARN="arn:aws:iam::${AWS_ACCOUNT_ID}:role/aws-service-role/ecs.amazonaws.com/AWSServiceRoleForECS"
+            
             aws ecs register-task-definition \
               --family quiz-dock-task \
               --requires-compatibilities FARGATE \
               --network-mode awsvpc \
               --cpu 256 \
               --memory 512 \
-              --execution-role-arn ${AWS_ECS_EXECUTION_ROLE_ARN} \
+              --execution-role-arn "$EXECUTION_ROLE_ARN" \
               --container-definitions '[
                 {
                   "name": "quiz-dock-backend",
