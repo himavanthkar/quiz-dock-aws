@@ -40,7 +40,8 @@ workflows:
           name: build-and-push-backend
           requires:
             - test
-          executor: aws-ecr/default
+          docker:
+            - image: cimg/aws:2024.01
           create-repo: true
           setup-remote-docker: true
           repo: quiz-dock-backend
@@ -48,12 +49,13 @@ workflows:
           tag: latest,${CIRCLE_SHA1}
           path: ./
           dockerfile: Dockerfile
-          platform: linux/amd64
+          extra-build-args: --platform=linux/amd64
       - aws-ecr/build-and-push-image:
           name: build-and-push-frontend
           requires:
             - test
-          executor: aws-ecr/default
+          docker:
+            - image: cimg/aws:2024.01
           create-repo: true
           setup-remote-docker: true
           repo: quiz-dock-frontend
@@ -61,7 +63,7 @@ workflows:
           tag: latest,${CIRCLE_SHA1}
           path: ./frontend
           dockerfile: Dockerfile
-          platform: linux/amd64
+          extra-build-args: --platform=linux/amd64
       - aws-ecs/deploy-service-update:
           requires:
             - build-and-push-backend
