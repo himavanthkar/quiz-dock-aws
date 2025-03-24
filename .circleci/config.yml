@@ -40,22 +40,28 @@ workflows:
           name: build-and-push-backend
           requires:
             - test
+          executor: aws-ecr/default
           create-repo: true
+          setup-remote-docker: true
           repo: quiz-dock-backend
           region: ${AWS_REGION}
           tag: latest,${CIRCLE_SHA1}
           path: ./
           dockerfile: Dockerfile
+          platform: linux/amd64
       - aws-ecr/build-and-push-image:
           name: build-and-push-frontend
           requires:
             - test
+          executor: aws-ecr/default
           create-repo: true
+          setup-remote-docker: true
           repo: quiz-dock-frontend
           region: ${AWS_REGION}
           tag: latest,${CIRCLE_SHA1}
           path: ./frontend
           dockerfile: Dockerfile
+          platform: linux/amd64
       - aws-ecs/deploy-service-update:
           requires:
             - build-and-push-backend
