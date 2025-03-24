@@ -38,8 +38,14 @@ jobs:
     steps:
       - checkout
       - setup_remote_docker
+      - run:
+          name: Configure AWS credentials
+          command: |
+            aws configure set aws_access_key_id ${AWS_KEY}
+            aws configure set aws_secret_access_key ${AWS_SECRET_ACCESS_KEY}
+            aws configure set default.region ${AWS_DEFAULT_REGION}
       - aws-ecr/build-and-push-image:
-          repo: quiz-dock-backend
+          repo: ${AWS_ECR_BACKEND_REPO}
           tag: latest,${CIRCLE_SHA1}
           path: ./
           extra-build-args: --platform=linux/amd64
@@ -50,8 +56,14 @@ jobs:
     steps:
       - checkout
       - setup_remote_docker
+      - run:
+          name: Configure AWS credentials
+          command: |
+            aws configure set aws_access_key_id ${AWS_KEY}
+            aws configure set aws_secret_access_key ${AWS_SECRET_ACCESS_KEY}
+            aws configure set default.region ${AWS_DEFAULT_REGION}
       - aws-ecr/build-and-push-image:
-          repo: quiz-dock-frontend
+          repo: ${AWS_ECR_FRONTEND_REPO}
           tag: latest,${CIRCLE_SHA1}
           path: ./frontend
           extra-build-args: --platform=linux/amd64
@@ -70,6 +82,6 @@ workflows:
           requires:
             - build-and-push-backend
             - build-and-push-frontend
-          family: quiz-dock-service
-          cluster: quiz-dock-cluster
+          family: ${AWS_ECS_CLUSTER}
+          cluster: ${AWS_ECS_CLUSTER}
           container-image-name-updates: "container=quiz-dock-backend,tag=${CIRCLE_SHA1},container=quiz-dock-frontend,tag=${CIRCLE_SHA1}" 
