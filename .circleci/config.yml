@@ -38,16 +38,12 @@ jobs:
     steps:
       - checkout
       - setup_remote_docker
-      - run:
-          name: Set ECR Registry URL
-          command: |
-            echo "export ECR_REGISTRY_URL=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com" >> $BASH_ENV
-            source $BASH_ENV
       - aws-ecr/build-and-push-image:
+          create-repo: true
           repo: ${AWS_ECR_BACKEND_REPO}
-          registry-id: AWS_ACCOUNT_ID
           region: AWS_DEFAULT_REGION
           tag: latest,${CIRCLE_SHA1}
+          dockerfile: Dockerfile
           path: ./
           extra-build-args: --platform=linux/amd64
 
@@ -57,16 +53,12 @@ jobs:
     steps:
       - checkout
       - setup_remote_docker
-      - run:
-          name: Set ECR Registry URL
-          command: |
-            echo "export ECR_REGISTRY_URL=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com" >> $BASH_ENV
-            source $BASH_ENV
       - aws-ecr/build-and-push-image:
+          create-repo: true
           repo: ${AWS_ECR_FRONTEND_REPO}
-          registry-id: AWS_ACCOUNT_ID
           region: AWS_DEFAULT_REGION
           tag: latest,${CIRCLE_SHA1}
+          dockerfile: Dockerfile
           path: ./frontend
           extra-build-args: --platform=linux/amd64
 
