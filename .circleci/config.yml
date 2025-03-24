@@ -43,7 +43,8 @@ jobs:
       - checkout
       - setup_remote_docker
       - aws-ecr/build-and-push-image:
-          account-url: "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
+          region: ${AWS_DEFAULT_REGION}
+          registry-id: ${AWS_ACCOUNT_ID}
           repo: ${AWS_ECR_BACKEND_REPO}
           tag: latest,${CIRCLE_SHA1}
           path: ./
@@ -60,7 +61,8 @@ jobs:
       - checkout
       - setup_remote_docker
       - aws-ecr/build-and-push-image:
-          account-url: "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
+          region: ${AWS_DEFAULT_REGION}
+          registry-id: ${AWS_ACCOUNT_ID}
           repo: ${AWS_ECR_FRONTEND_REPO}
           tag: latest,${CIRCLE_SHA1}
           path: ./frontend
