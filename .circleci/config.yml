@@ -24,20 +24,26 @@ workflows:
           name: build-and-push-backend
           requires:
             - test
-          repo: "${AWS_RESOURCE_NAME_PREFIX}-backend"
+          create-repo: true
+          repo: quiz-dock-backend
+          region: ${AWS_REGION}
+          tag: latest,${CIRCLE_SHA1}
           path: ./
-          tag: "${CIRCLE_SHA1}"
+          dockerfile: Dockerfile
       - aws-ecr/build-and-push-image:
           name: build-and-push-frontend
           requires:
             - test
-          repo: "${AWS_RESOURCE_NAME_PREFIX}-frontend"
+          create-repo: true
+          repo: quiz-dock-frontend
+          region: ${AWS_REGION}
+          tag: latest,${CIRCLE_SHA1}
           path: ./frontend
-          tag: "${CIRCLE_SHA1}"
+          dockerfile: Dockerfile
       - aws-ecs/deploy-service-update:
           requires:
             - build-and-push-backend
             - build-and-push-frontend
-          family: "${AWS_RESOURCE_NAME_PREFIX}-service"
-          cluster: "${AWS_RESOURCE_NAME_PREFIX}-cluster"
-          container-image-name-updates: "container=${AWS_RESOURCE_NAME_PREFIX}-backend,tag=${CIRCLE_SHA1},container=${AWS_RESOURCE_NAME_PREFIX}-frontend,tag=${CIRCLE_SHA1}" 
+          family: quiz-dock-service
+          cluster: quiz-dock-cluster
+          container-image-name-updates: "container=quiz-dock-backend,tag=${CIRCLE_SHA1},container=quiz-dock-frontend,tag=${CIRCLE_SHA1}" 
