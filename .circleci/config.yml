@@ -111,18 +111,18 @@ jobs:
       - run:
           name: Deploy to ECS
           command: |
-            # First, get the current task definition
-            TASK_DEFINITION=$(aws ecs describe-task-definition \
-              --task-definition ${AWS_ECS_TASK_DEFINITION} \
-              --region ${AWS_DEFAULT_REGION} \
-              --query 'taskDefinition.taskDefinitionArn' \
-              --output text)
+            # Print AWS CLI version and verify credentials
+            aws --version
+            aws sts get-caller-identity
             
-            # Update the service with the current task definition
+            # List services to verify they exist
+            echo "Available services in cluster ${AWS_ECS_CLUSTER}:"
+            aws ecs list-services --cluster ${AWS_ECS_CLUSTER} --region ${AWS_DEFAULT_REGION}
+            
+            # Update service without task definition to force new deployment
             aws ecs update-service \
-              --cluster "${AWS_ECS_CLUSTER}" \
-              --service "${AWS_ECS_SERVICE}" \
-              --task-definition "$TASK_DEFINITION" \
+              --cluster ${AWS_ECS_CLUSTER} \
+              --service quiz-dock-service \
               --force-new-deployment \
               --region ${AWS_DEFAULT_REGION}
 
