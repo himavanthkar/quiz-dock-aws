@@ -8,13 +8,29 @@ orbs:
 jobs:
   test:
     docker:
-      - image: cimg/node:16.20
+      - image: cimg/node:18.19
+        environment:
+          NODE_ENV: test
     steps:
       - checkout
-      - node/install-packages
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "package.json" }}
+            - v1-dependencies-
       - run:
-          name: Run backend tests
+          name: Install Dependencies
+          command: |
+            npm install --legacy-peer-deps
+            cd frontend && npm install --legacy-peer-deps
+      - save_cache:
+          paths:
+            - node_modules
+            - frontend/node_modules
+          key: v1-dependencies-{{ checksum "package.json" }}
+      - run:
+          name: Run Tests
           command: npm run test:ci
+          no_output_timeout: 5m
 
 workflows:
   build-test-deploy:
