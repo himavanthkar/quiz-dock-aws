@@ -1,79 +1,43 @@
 version: 2.1
 
 orbs:
-  aws-ecr: circleci/aws-ecr@8.1.3
+  aws-ecr: circleci/aws-ecr@8.2.1
   aws-ecs: circleci/aws-ecs@3.2.0
   node: circleci/node@5.1.0
 
 jobs:
   test:
     docker:
-      - image: cimg/node:18.19
-        environment:
-          NODE_ENV: test
-          JWT_SECRET: test_secret_key_123
-          JWT_EXPIRE: 1h
-          PORT: 5002
-          JEST_JUNIT_OUTPUT_DIR: ./reports/junit/
-    resource_class: medium
+      - image: cimg/node:16.20
     steps:
       - checkout
-      - node/install-packages:
-          pkg-manager: npm
+      - node/install-packages
       - run:
-          name: Create test results directory
-          command: |
-            mkdir -p ./reports/junit/
-      - run:
-          name: Check environment
-          command: |
-            echo "Node version: $(node -v)"
-            echo "NPM version: $(npm -v)"
-            echo "NODE_ENV: $NODE_ENV"
-            echo "JWT_SECRET is set: $([[ ! -z "$JWT_SECRET" ]] && echo 'Yes' || echo 'No')"
-            echo "Test files to run:"
-            find __tests__ -name "*.test.js" -type f
-      - run:
-          name: Run backend tests with JUnit reporter
-          command: |
-            echo "Running tests with increased timeout..."
-            NODE_OPTIONS="--max-old-space-size=4096" npm run test:ci -- --testMatch="**/__tests__/**/*.test.js" --ci --reporters=default --reporters=jest-junit
-          no_output_timeout: 10m
-      - store_test_results:
-          path: ./reports/junit/
-      - store_artifacts:
-          path: ./reports/junit/
-          destination: test-results
+          name: Run backend tests
+          command: npm run test:ci
 
 workflows:
-  version: 2
   build-test-deploy:
     jobs:
       - test
       - aws-ecr/build-and-push-image:
           name: build-and-push-backend
-          executor: aws-ecr/default
           requires:
             - test
           repo: "${AWS_RESOURCE_NAME_PREFIX}-backend"
           path: ./
           tag: "${CIRCLE_SHA1}"
-          dockerfile: Dockerfile
       - aws-ecr/build-and-push-image:
           name: build-and-push-frontend
-          executor: aws-ecr/default
           requires:
             - test
           repo: "${AWS_RESOURCE_NAME_PREFIX}-frontend"
           path: ./frontend
           tag: "${CIRCLE_SHA1}"
-          dockerfile: Dockerfile
       - aws-ecs/deploy-service-update:
           requires:
             - build-and-push-backend
             - build-and-push-frontend
           family: "${AWS_RESOURCE_NAME_PREFIX}-service"
           cluster: "${AWS_RESOURCE_NAME_PREFIX}-cluster"
-          container-image-name-updates: |
-            container=${AWS_RESOURCE_NAME_PREFIX}-backend-container,tag=${CIRCLE_SHA1}
-            container=${AWS_RESOURCE_NAME_PREFIX}-frontend-container,tag=${CIRCLE_SHA1} 
+          container-image-name-updates: "container=${AWS_RESOURCE_NAME_PREFIX}-backend,tag=${CIRCLE_SHA1},container=${AWS_RESOURCE_NAME_PREFIX}-frontend,tag=${CIRCLE_SHA1}" 
