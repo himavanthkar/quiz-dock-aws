@@ -325,4 +325,5 @@ Common issues and solutions:
 3. Add performance monitoring
 4. Implement auto-scaling
 5. Add backup strategy
+<img width="1440" alt="Screenshot 2025-04-08 at 9 09 13 PM" src="https://github.com/user-attachments/assets/cd7e9e1e-6e52-4255-b114-9d235a9bf42f" />
 
